@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gas Laws</title>
+<style>
+:root{--bg:#0B1A2B;--ink:#EDE8DC;--mut:#8A97A8;--g:#7FD4A8;--a:#E8B23A;--line:rgba(237,232,220,.18);--panel:rgba(255,255,255,.03)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI","Sukhumvit Set","Noto Sans Thai",sans-serif;
+ background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:28px 28px;
+ display:flex;flex-direction:column;height:100dvh;-webkit-user-select:none;user-select:none}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px 6px}
+header .t{flex:1;min-width:0}
+header h1{font-size:clamp(18px,2.6vw,26px);font-weight:800;letter-spacing:.3px}
+header p{color:var(--mut);font-size:13px;margin-top:2px}
+.btn{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer;font-family:inherit}
+.btn:active{transform:scale(.97)}
+#chips{display:flex;gap:6px;padding:4px 16px 8px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+#chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;background:var(--panel);color:var(--ink);cursor:pointer;font-family:ui-monospace,Menlo,monospace}
+.chip.part{font-family:inherit}
+.chip.on.part{border-color:var(--g);color:var(--g);box-shadow:0 0 0 1px var(--g) inset}
+.chip.on.par{border-color:var(--a);color:var(--a);box-shadow:0 0 0 1px var(--a) inset}
+.num{flex:none;display:flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:2px 10px 2px 4px;font-size:13px;font-family:ui-monospace,Menlo,monospace;color:var(--mut)}
+.num.on{border-color:var(--a);box-shadow:0 0 0 1px var(--a) inset}
+.num input{width:62px;background:transparent;border:none;color:var(--ink);font:inherit;font-size:14px;text-align:right;padding:4px;outline:none}
+.num.on input{color:var(--a)}
+.sep{flex:none;width:1px;background:var(--line);margin:2px 4px}
+main{flex:1;min-height:0;display:flex;gap:8px;padding:0 12px}
+main svg{height:100%;min-width:0}
+#app{flex:1.6}#side{flex:1}
+footer{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
+.bar{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 auto}
+#tapBtn{font-size:16px;padding:9px 28px}
+#clock{font-size:clamp(24px,4vw,32px);min-width:150px;text-align:center;letter-spacing:1px}
+.play{background:var(--g);color:#0B1A2B;border:none;font-weight:800;min-width:48px}
+.tap{border-color:var(--a);color:var(--a)}
+.credit{text-align:center;color:var(--mut);font-size:11px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9;padding:12px}
+#modal.show{display:flex}
+.card{background:#0F2236;border:1px solid var(--line);border-radius:14px;padding:16px;width:min(460px,100%);max-height:92dvh;overflow:auto;-webkit-user-select:text;user-select:text}
+.card h2{font-size:17px;margin-bottom:10px}
+.card label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;margin:7px 0;color:var(--ink)}
+.card input,.card select{background:#0B1A2B;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:15px;width:130px;font-family:ui-monospace,Menlo,monospace}
+.card input[type=checkbox]{width:22px;height:22px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.msg{font-size:13px;color:var(--a);margin-top:8px;min-height:16px}
+.hr{height:1px;background:var(--line);margin:12px 0}
+</style>
+</head>
+<body>
+<header>
+ <div class="t"><h1 id="title">Gas Laws</h1><p id="sub"></p></div>
+ <button class="btn" id="langBtn">ไทย</button>
+ <button class="btn" id="tBtn">Teacher</button>
+</header>
+<div id="chips"></div>
+<main>
+ <svg id="app" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid meet"></svg>
+ <svg id="side" viewBox="0 0 240 700" preserveAspectRatio="xMidYMid meet"></svg>
+</main>
+<footer>
+ <div class="bar">
+  <button class="btn tap" id="tapBtn">Tap</button>
+ </div>
+ <div class="credit" id="credit"></div>
+</footer>
+
+<div id="modal"><div class="card" id="card"></div></div>
+
+<script>
+// ===== Settings (teacher) =====
+const DEF={P0:101.3,Tr:25,d:14.5,V1:4.0,V2:8.0,Vd:0,noise:1,fric:1,lock:0};
+let S=Object.assign({},DEF), fromLink=false;
+try{const q=new URLSearchParams(location.search).get('s');if(q){Object.assign(S,JSON.parse(decodeURIComponent(escape(atob(q)))));fromLink=true;}}catch(e){}
+
+const PW0='9;5:4*5\u2018', ADMIN_EMAIL='rossumont@gmail.com', ADMIN_PW='LhaMoAPL9545=';
+const norm=s=>String(s).trim().replace(/[\u2018\u2019\u0027\u0060]/g,"'");
+function curPw(){try{return localStorage.getItem('gaslab_pw')||PW0}catch(e){return PW0}}
+
+// ===== Language =====
+let L='en';
+const T={
+en:{title:'Gas Laws',parts:["Boyle's Law","Charles's Law","Combined Gas Law"],sub:['P · V · T','P · V · T','P · V · T'],
+ tap:'Tap',teacher:'Teacher',room:'Room',baro:'BAROMETER',thermo:'THERMOMETER',scale:'SCALE ×6',dia:'Syringe inner Ø',load:'Load',
+ credit:'Asst.Prof.Dr. Rossumont Jaryabhand · Rajamangala University of Technology Tawan-ok, Uthenthawai Campus · No Right Reserved',
+ pw:'Teacher password',ok:'OK',cancel:'Close',wrong:'Wrong password',set:'Teacher settings',P0:'Atmospheric pressure (kPa)',Tr:'Room temperature (°C)',
+ d:'Syringe inner diameter (mm)',V1:'Start volume (ml)',V2:'Start volume, Part 2 (ml)',Vd:'Hidden dead volume (ml)',noise:'Reading scatter',fric:'Plunger friction',
+ lock:'Student link opens',all:'All parts',apply:'Apply',rand:'Random values',copy:'Copy student link',ans:'Show answer',hide:'Hide answer',copied:'Link copied',
+ nolink:'Copy link works only on a real website (e.g. GitHub Pages)',chg:'Change password',email:'Email',adminpw:'Admin password',newpw:'New password',save:'Save',
+ saved:'Password changed (this device)',bad:'Email or admin password incorrect',over:'MAX',stud:'Student link loaded'},
+th:{title:'กฎของแก๊ส',parts:['กฎของบอยล์','กฎของชาร์ล','กฎรวมของแก๊ส'],sub:['P · V · T','P · V · T','P · V · T'],
+ tap:'เคาะ',teacher:'ครู',room:'ห้อง',baro:'บารอมิเตอร์',thermo:'เทอร์มอมิเตอร์',scale:'สเกล ×6',dia:'Ø ภายในกระบอกฉีดยา',load:'มวลถ่วง',
+ credit:'ผศ.ดร.รสสุมนต์ จารยะพันธุ์ · มหาวิทยาลัยเทคโนโลยีราชมงคลตะวันออก อุเทนถวาย · ไม่สงวนลิขสิทธิ์',
+ pw:'รหัสผ่านครู',ok:'ตกลง',cancel:'ปิด',wrong:'รหัสผ่านไม่ถูกต้อง',set:'ตั้งค่าสำหรับครู',P0:'ความดันบรรยากาศ (kPa)',Tr:'อุณหภูมิห้อง (°C)',
+ d:'เส้นผ่านศูนย์กลางภายใน (mm)',V1:'ปริมาตรเริ่มต้น (ml)',V2:'ปริมาตรเริ่มต้น ตอน 2 (ml)',Vd:'ปริมาตรค้างในหัวเข็ม (ml)',noise:'ความคลาดเคลื่อนการอ่าน',fric:'แรงเสียดทานลูกสูบ',
+ lock:'ลิงก์นักศึกษาเปิดที่',all:'ทุกตอน',apply:'ใช้ค่านี้',rand:'สุ่มค่า',copy:'คัดลอกลิงก์นักศึกษา',ans:'แสดงเฉลย',hide:'ซ่อนเฉลย',copied:'คัดลอกลิงก์แล้ว',
+ nolink:'คัดลอกลิงก์ได้เฉพาะเมื่อเปิดจากเว็บจริง (เช่น GitHub Pages)',chg:'เปลี่ยนรหัสผ่าน',email:'อีเมล',adminpw:'รหัสผู้ดูแล',newpw:'รหัสผ่านใหม่',save:'บันทึก',
+ saved:'เปลี่ยนรหัสผ่านแล้ว (เฉพาะเครื่องนี้)',bad:'อีเมลหรือรหัสผู้ดูแลไม่ถูกต้อง',over:'สุด',stud:'โหลดลิงก์นักศึกษาแล้ว'}};
+const t=k=>T[L][k];
+
+// ===== State =====
+const MASSES=[0,100,200,300,400,500,600,700,800];
+const TEMPS=[null,30,40,50,60,70,80]; // null = room
+const st={part:3,m:0,tc:null,pm:0,ptc:null,Tset:S.Tr,Tb:S.Tr,Tg:S.Tr,Vpos:null,Vshow:null,f:.1,nz:0,shake:0,teacher:false,ans:false};
+S.lock=0;
+const rnd=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+function newF(){st.f=S.fric?0.06+Math.random()*0.12:0}
+function newNz(){st.nz=S.noise?rnd()*0.03:0}
+
+function phys(){
+ const A=Math.PI*Math.pow(S.d/2000,2);
+ const m=st.part===2?0:st.m;
+ let P=S.P0*1000-(m/1000)*9.81/A; if(P<5000)P=5000;
+ const V0=st.part===2?S.V2:S.V1;
+ const k=S.P0*1000*(V0+S.Vd)/(S.Tr+273.15);
+ const Vgas=k*(st.Tg+273.15)/P;
+ return {A,P,m,Vgas,Vread:Vgas-S.Vd};
+}
+function resetPart(){
+ st.Tset=S.Tr;st.Tb=S.Tr;st.Tg=S.Tr;st.tc=null;st.ptc=null;if(st.part===2)st.m=0;st.pm=st.m;
+ newF();newNz();const p=phys();st.Vpos=p.Vread;st.Vshow=p.Vread;
+}
+
+// ===== UI build =====
+function buildChips(){
+ const c=document.getElementById('chips');c.innerHTML='';
+ const sep=()=>{const s=document.createElement('div');s.className='sep';c.appendChild(s);};
+ if(st.part!==2){MASSES.forEach(m=>{const b=document.createElement('button');b.className='chip par'+(st.pm===m?' on':'');b.dataset.k='m';b.dataset.v=m;b.textContent=m+' g';
+  b.onclick=()=>{st.pm=m;buildChips();};c.appendChild(b);});
+  numBox('m',!MASSES.includes(st.pm),st.pm,'g',0,800,v=>{st.pm=v;});}
+ if(st.part!==1){sep();TEMPS.forEach(v=>{const b=document.createElement('button');b.className='chip par'+(st.ptc===v?' on':'');b.dataset.k='t';b.dataset.v=v==null?'':v;b.textContent=v==null?t('room'):v+' °C';
+  b.onclick=()=>{st.ptc=v;buildChips();};c.appendChild(b);});
+  numBox('t',!TEMPS.includes(st.ptc),st.ptc==null?'':st.ptc,'°C',0,90,v=>{st.ptc=v;});}
+}
+function marks(){document.querySelectorAll('#chips [data-k]').forEach(e=>{const cur=e.dataset.k==='m'?st.pm:st.ptc;
+  if(e.classList.contains('num'))e.classList.toggle('on',e.dataset.k==='m'?!MASSES.includes(cur):!TEMPS.includes(cur));
+  else e.classList.toggle('on',String(cur==null?'':cur)===e.dataset.v);});}
+function numBox(k,on,val,unit,lo,hi,set){
+ const c=document.getElementById('chips'),w=document.createElement('label');w.className='num'+(on?' on':'');w.dataset.k=k;
+ const i=document.createElement('input');i.type='number';i.inputMode='decimal';i.step='any';i.min=lo;i.max=hi;i.value=on?val:'';i.placeholder='…';
+ const get=()=>{const v=parseFloat(i.value);return isNaN(v)?null:Math.round(Math.min(hi,Math.max(lo,v))*10)/10;};
+ i.oninput=()=>{const v=get();if(v!==null){set(v);marks();}};
+ i.onchange=()=>{const v=get();if(v!==null){set(v);i.value=v;marks();}};
+ i.onkeydown=e=>{if(e.key==='Enter')i.blur();};
+ w.appendChild(i);w.appendChild(document.createTextNode(unit));c.appendChild(w);
+}
+function applyLang(){
+ document.documentElement.lang=L;
+ document.getElementById('title').textContent=t('title');
+ document.getElementById('sub').textContent=t('sub')[st.part-1];
+ document.getElementById('langBtn').textContent=L==='en'?'ไทย':'EN';
+ document.getElementById('tBtn').textContent=t('teacher');
+ document.getElementById('tapBtn').textContent=t('tap');
+ document.getElementById('credit').textContent=t('credit');
+ buildChips();
+}
+document.getElementById('langBtn').onclick=()=>{L=L==='en'?'th':'en';applyLang();if(document.getElementById('modal').classList.contains('show'))openTeacher();};
+
+// ===== Tap =====
+document.getElementById('tapBtn').onclick=()=>{const ch=st.pm!==st.m||st.ptc!==st.tc;if(st.part!==2)st.m=st.pm;st.tc=st.ptc;st.Tset=st.tc==null?S.Tr:st.tc;if(ch)newNz();const p=phys();st.Vpos=p.Vread+st.nz;newF();st.shake=.35;};
+
+
+// ===== Drawing =====
+const app=document.getElementById('app'),side=document.getElementById('side');
+const Y0=130,PX=22; // scale on apparatus
+function waterCol(T){const k=Math.max(0,Math.min(1,(T-20)/60));const r=Math.round(80+150*k),g=Math.round(150-60*k),b=Math.round(220-150*k);return `rgba(${r},${g},${b},0.22)`;}
+function drawApp(){
+ const Vr=Math.max(0,Math.min(10,st.Vshow)),ys=Y0+Vr*PX;
+ const jx=st.shake>0?Math.sin(performance.now()/18)*2.5:0;
+ let s='';
+ s+=`<rect x="20" y="660" width="360" height="16" rx="3" fill="#2B3A4C" stroke="#4A5C70"/>`;
+ s+=`<rect x="70" y="30" width="9" height="632" fill="#5B6B7E" stroke="#7D8DA0"/>`;
+ s+=`<rect x="285" y="600" width="88" height="60" rx="3" fill="#3A4656" stroke="#6B7A8C"/><text x="329" y="636" fill="#9AA6B4" font-size="13" text-anchor="middle" font-family="monospace">2 kg</text>`;
+ const jacket=st.part!==1;
+ // jacket back
+ if(jacket){s+=`<rect x="180" y="122" width="100" height="253" rx="8" fill="${waterCol(st.Tb)}" stroke="rgba(220,235,255,.45)"/>`;
+  const heat=st.Tset>st.Tb+0.3;
+  let z='';for(let i=0;i<=18;i++){z+=(i%2?190:184)+','+(165+i*10)+' ';}
+  s+=`<polyline points="${z}" fill="none" stroke="${heat?'#E8B23A':'#6B7A8C'}" stroke-width="2.5" ${heat?'filter="url(#glow)"':''}/>`;
+  s+=`<line x1="186" y1="350" x2="186" y2="30" stroke="#6B7A8C" stroke-width="2"/>`;
+  s+=`<rect x="265" y="40" width="6" height="290" rx="3" fill="#9AA6B4"/><path d="M268 40 Q268 18 320 18 L400 18" fill="none" stroke="#6B7A8C" stroke-width="2"/>`;}
+ s+=`<g transform="translate(${jx},0)">`;
+ // tubing & clip
+ s+=`<path d="M230 96 L230 58 Q230 30 258 26" fill="none" stroke="#C9B48A" stroke-width="7" stroke-linecap="round"/>`;
+ s+=`<rect x="218" y="64" width="24" height="11" rx="2" fill="#3C7DD9"/>`;
+ // nozzle
+ s+=`<path d="M224 96 L236 96 L236 112 L255 122 L205 122 L224 112 Z" fill="rgba(220,235,255,.12)" stroke="rgba(220,235,255,.6)"/>`;
+ // barrel
+ s+=`<rect x="205" y="122" width="50" height="236" fill="rgba(220,235,255,.07)" stroke="rgba(220,235,255,.6)"/>`;
+ s+=`<rect x="206" y="122" width="48" height="${ys-122}" fill="rgba(127,212,168,.07)"/>`;
+ for(let v=0;v<=10.001;v+=0.2){const y=Y0+v*PX,maj=Math.abs(v-Math.round(v))<.01;
+  s+=`<line x1="205" y1="${y}" x2="${205+(maj?12:6)}" y2="${y}" stroke="rgba(237,232,220,.75)" stroke-width="${maj?1.2:.7}"/>`;
+  if(maj&&Math.round(v)%2===0)s+=`<text x="221" y="${y+3.5}" fill="rgba(237,232,220,.85)" font-size="9" font-family="monospace">${Math.round(v)}</text>`;}
+ s+=`<rect x="190" y="356" width="80" height="7" rx="2" fill="rgba(220,235,255,.25)" stroke="rgba(220,235,255,.6)"/>`;
+ // clamp
+ s+=`<rect x="62" y="98" width="26" height="22" rx="3" fill="#1E2A38" stroke="#556"/><rect x="88" y="104" width="112" height="9" fill="#1E2A38"/><rect x="198" y="98" width="64" height="16" rx="3" fill="#1E2A38" stroke="#556"/>`;
+ // plunger
+ s+=`<rect x="206" y="${ys}" width="48" height="9" fill="#151515"/><line x1="206" y1="${ys+3}" x2="254" y2="${ys+3}" stroke="#333"/>`;
+ s+=`<rect x="226" y="${ys+9}" width="8" height="${170-9}" fill="rgba(230,230,230,.55)"/><rect x="200" y="${ys+170}" width="60" height="6" rx="2" fill="rgba(230,230,230,.7)"/>`;
+ const m=st.part===2?0:st.m;
+ if(m>0){const n=Math.max(0,Math.floor(m/100+1e-9)-1),top=ys+176;
+  s+=`<path d="M230 ${top} L230 ${top+14} Q222 ${top+14} 222 ${top+22} Q222 ${top+30} 230 ${top+30}" fill="none" stroke="#C9B48A" stroke-width="1.6"/>`;
+  s+=`<line x1="230" y1="${top+30}" x2="230" y2="${top+40+n*9}" stroke="#8A97A8" stroke-width="3"/>`;
+  for(let i=0;i<n;i++){s+=`<rect x="203" y="${top+34+i*9}" width="54" height="8" rx="1.5" fill="#7B8796" stroke="#A9B4C1"/>`;}
+  s+=`<rect x="200" y="${top+36+n*9}" width="60" height="7" rx="1.5" fill="#56626F" stroke="#A9B4C1"/>`;
+  s+=`<text x="268" y="${top+30+n*4.5}" fill="#E8B23A" font-size="13" font-family="monospace">${m} g</text>`;}
+ s+=`</g>`;
+ if(jacket){s+=`<rect x="180" y="122" width="100" height="253" rx="8" fill="none" stroke="rgba(220,235,255,.55)" stroke-width="1.5"/>`;}
+ s=`<defs><filter id="glow"><feGaussianBlur stdDeviation="2"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`+s;
+ app.innerHTML=s;
+}
+function box(y,lab,val,col){return `<rect x="10" y="${y}" width="220" height="66" rx="10" fill="rgba(255,255,255,.03)" stroke="rgba(237,232,220,.18)"/>
+<text x="22" y="${y+20}" fill="#8A97A8" font-size="11" font-family="monospace" letter-spacing="1">${lab}</text>
+<text x="218" y="${y+52}" fill="${col}" font-size="26" text-anchor="end" font-family="monospace">${val}</text>`;}
+function drawSide(p){
+ let s='';
+ s+=box(10,t('baro'),S.P0.toFixed(1)+' kPa','#EDE8DC');
+ s+=box(86,t('thermo'),st.Tb.toFixed(1)+' °C','#E8B23A');
+ // magnifier
+ const wy=170,wh=380,cy=wy+wh/2,K=130,Vs=Math.max(0,Math.min(10,st.Vshow));
+ s+=`<defs><clipPath id="cw"><rect x="10" y="${wy}" width="220" height="${wh}" rx="12"/></clipPath></defs>`;
+ s+=`<rect x="10" y="${wy}" width="220" height="${wh}" rx="12" fill="#0E2033" stroke="rgba(237,232,220,.25)"/>`;
+ s+=`<g clip-path="url(#cw)">`;
+ const yZero=cy-Vs*K;
+ s+=`<rect x="70" y="${yZero}" width="140" height="${cy-yZero}" fill="rgba(127,212,168,.08)"/>`;
+ s+=`<rect x="70" y="${wy-10}" width="140" height="${Math.max(0,yZero-wy+10)}" fill="#22303F"/>`;
+ s+=`<line x1="70" y1="${wy}" x2="70" y2="${wy+wh}" stroke="rgba(220,235,255,.5)"/><line x1="210" y1="${wy}" x2="210" y2="${wy+wh}" stroke="rgba(220,235,255,.5)"/>`;
+ const a=Math.floor((Vs-1.6)/0.2),b=Math.ceil((Vs+1.6)/0.2);
+ for(let i=a;i<=b;i++){const v=i*0.2;if(v<-0.001||v>10.001)continue;const y=cy+(v-Vs)*K,maj=i%5===0;
+  s+=`<line x1="70" y1="${y}" x2="${70+(maj?46:24)}" y2="${y}" stroke="#EDE8DC" stroke-width="${maj?2:1.2}"/>`;
+  if(maj)s+=`<text x="60" y="${y+6}" fill="#EDE8DC" font-size="17" text-anchor="end" font-family="monospace">${Math.round(v)}</text>`;}
+ s+=`<rect x="71" y="${cy}" width="138" height="54" fill="#121212"/><line x1="71" y1="${cy+18}" x2="209" y2="${cy+18}" stroke="#2a2a2a" stroke-width="2"/><line x1="71" y1="${cy+36}" x2="209" y2="${cy+36}" stroke="#2a2a2a" stroke-width="2"/>`;
+ s+=`<rect x="122" y="${cy+54}" width="36" height="200" fill="rgba(230,230,230,.35)"/>`;
+ s+=`<text x="216" y="${cy-8}" fill="#8A97A8" font-size="12" text-anchor="end" font-family="monospace">ml</text>`;
+ s+=`</g>`;
+ s+=`<text x="22" y="${wy+20}" fill="#8A97A8" font-size="11" font-family="monospace" letter-spacing="1">${t('scale')}</text>`;
+ if(st.Vshow>10.001)s+=`<text x="218" y="${wy+20}" fill="#E8B23A" font-size="12" text-anchor="end" font-family="monospace">${t('over')}</text>`;
+ // info
+ s+=`<text x="12" y="578" fill="#8A97A8" font-size="12">${t('dia')}</text><text x="230" y="600" fill="#EDE8DC" font-size="18" text-anchor="end" font-family="monospace">${S.d.toFixed(2)} mm</text>`;
+ if(st.part!==2)s+=`<text x="12" y="626" fill="#8A97A8" font-size="12">${t('load')}</text><text x="230" y="648" fill="#E8B23A" font-size="18" text-anchor="end" font-family="monospace">${st.m} g</text>`;
+ if(st.teacher&&st.ans){const TK=st.Tg+273.15,Vm=p.Vgas*1e-6;
+  s+=`<rect x="10" y="${wy+30}" width="220" height="150" rx="8" fill="rgba(11,26,43,.94)" stroke="#7FD4A8"/>`;
+  const lines=['P  '+(p.P/1000).toFixed(2)+' kPa','V  '+p.Vgas.toFixed(3)+' ml','Vscale '+p.Vread.toFixed(3),'T  '+TK.toFixed(2)+' K','PV '+(p.P*Vm).toFixed(4)+' J','PV/T '+(p.P*Vm/TK*1000).toFixed(4)+' mJ/K','V/T '+(p.Vgas/TK*1000).toFixed(3)+' µl/K'];
+  lines.forEach((l,i)=>s+=`<text x="20" y="${wy+52+i*19}" fill="#7FD4A8" font-size="13" font-family="monospace">${l}</text>`);}
+ side.innerHTML=s;
+}
+
+// ===== Loop =====
+let last=performance.now(),acc=0;
+function loop(now){
+ const dt=Math.min(.1,(now-last)/1000);last=now;
+ const up=st.Tset>st.Tb,tau=up?12:20;
+ let dT=(st.Tset-st.Tb)*(1-Math.exp(-dt/tau));const mx=(up?0.8:0.5)*dt;if(Math.abs(dT)>mx)dT=Math.sign(dT)*mx;st.Tb+=dT;
+ st.Tg+=(st.Tb-st.Tg)*(1-Math.exp(-dt/5));
+ const p=phys(),tg=p.Vread+st.nz;
+ if(st.Vpos===null)st.Vpos=tg;
+ const err=tg-st.Vpos;
+ if(Math.abs(err)>st.f)st.Vpos=tg-Math.sign(err)*st.f*0.25; else if(st.f===0)st.Vpos=tg;
+ if(st.Vshow===null)st.Vshow=st.Vpos;
+ st.Vshow+=(st.Vpos-st.Vshow)*(1-Math.exp(-dt/0.15));
+ if(st.shake>0)st.shake-=dt;
+ acc+=dt;if(acc>1/40){acc=0;drawApp();drawSide(p);}
+ requestAnimationFrame(loop);
+}
+
+// ===== Teacher =====
+const modal=document.getElementById('modal'),card=document.getElementById('card');
+modal.onclick=e=>{if(e.target===modal)modal.classList.remove('show');};
+document.getElementById('tBtn').onclick=()=>{st.teacher?openTeacher():askPw();};
+function askPw(){
+ card.innerHTML=`<h2>${t('pw')}</h2><input id="pw" type="password" style="width:100%" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+ <div class="msg" id="m1"></div><div class="row"><button class="btn play" id="pOk">${t('ok')}</button><button class="btn" id="pX">${t('cancel')}</button></div>`;
+ modal.classList.add('show');const i=document.getElementById('pw');setTimeout(()=>i.focus(),50);
+ const go=()=>{if(norm(i.value)===norm(curPw())){st.teacher=true;buildChips();openTeacher();}else document.getElementById('m1').textContent=t('wrong');};
+ document.getElementById('pOk').onclick=go;i.onkeydown=e=>{if(e.key==='Enter')go();};
+ document.getElementById('pX').onclick=()=>modal.classList.remove('show');
+}
+function fld(k,step){return `<label>${t(k)}<input id="f_${k}" type="number" step="${step}" value="${S[k]}"></label>`;}
+function openTeacher(){
+ card.innerHTML=`<h2>${t('set')}</h2>${fld('P0','0.1')}${fld('Tr','0.5')}${fld('d','0.01')}${fld('V1','0.1')}${fld('Vd','0.05')}
+ <label>${t('noise')}<input id="f_noise" type="checkbox" ${S.noise?'checked':''}></label>
+ <label>${t('fric')}<input id="f_fric" type="checkbox" ${S.fric?'checked':''}></label>
+ <div class="row"><button class="btn play" id="bAp">${t('apply')}</button><button class="btn" id="bRd">${t('rand')}</button><button class="btn" id="bCp">${t('copy')}</button>
+ <button class="btn tap" id="bAn">${st.ans?t('hide'):t('ans')}</button><button class="btn" id="bX">${t('cancel')}</button></div><div class="msg" id="m2"></div>
+ <div class="hr"></div><h2>${t('chg')}</h2>
+ <label>${t('email')}<input id="c_e" type="email" autocapitalize="off" style="width:200px"></label>
+ <label>${t('adminpw')}<input id="c_a" type="password" autocapitalize="off" style="width:200px"></label>
+ <label>${t('newpw')}<input id="c_n" type="text" autocapitalize="off" autocorrect="off" style="width:200px"></label>
+ <div class="row"><button class="btn" id="bSv">${t('save')}</button></div><div class="msg" id="m3"></div>`;
+ modal.classList.add('show');
+ const $=id=>document.getElementById(id);
+ const read=()=>{['P0','Tr','d','V1','Vd'].forEach(k=>{const v=parseFloat($('f_'+k).value);if(!isNaN(v))S[k]=v;});
+  S.noise=$('f_noise').checked?1:0;S.fric=$('f_fric').checked?1:0;S.lock=0;};
+ $('bAp').onclick=()=>{read();resetPart();applyLang();modal.classList.remove('show');};
+ $('bRd').onclick=()=>{const r=(a,b,dp)=>+(a+Math.random()*(b-a)).toFixed(dp);
+  $('f_P0').value=r(99.5,102.5,1);$('f_V1').value=r(3.4,4.2,1);$('f_d').value=[14.5,14.8,15.0,15.6][Math.floor(Math.random()*4)].toFixed(2);};
+ $('bCp').onclick=()=>{read();resetPart();applyLang();
+  if(!/^https?:$/.test(location.protocol)||location.origin==='null'){$('m2').textContent=t('nolink');return;}
+  const tok=btoa(unescape(encodeURIComponent(JSON.stringify(S))));const url=location.origin+location.pathname+'?s='+encodeURIComponent(tok);
+  const done=()=>$('m2').textContent=t('copied');
+  if(navigator.clipboard)navigator.clipboard.writeText(url).then(done,()=>{prompt('',url);});else prompt('',url);};
+ $('bAn').onclick=()=>{st.ans=!st.ans;$('bAn').textContent=st.ans?t('hide'):t('ans');};
+ $('bX').onclick=()=>modal.classList.remove('show');
+ $('bSv').onclick=()=>{if($('c_e').value.trim().toLowerCase()===ADMIN_EMAIL&&$('c_a').value===ADMIN_PW&&$('c_n').value.trim()){
+   try{localStorage.setItem('gaslab_pw',$('c_n').value.trim());$('m3').textContent=t('saved');}catch(e){$('m3').textContent='localStorage ✕';}}
+  else $('m3').textContent=t('bad');};
+}
+
+// ===== Start =====
+resetPart();applyLang();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
